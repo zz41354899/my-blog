@@ -37,7 +37,7 @@
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next theapp.
 
 1. 克隆這個項目
- 『`bash
+bash
  git clone <repository-url>
  cd my_blog
  ```
