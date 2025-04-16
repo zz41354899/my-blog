@@ -120,8 +120,8 @@ export default function AdminLayout({
         
         // 檢查是否為管理員帳號
         if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-          console.log('非管理員帳號', session.user.email);
-          setError('你無權訪問管理後台');
+          console.log('⛔ 非管理員帳號', session.user.email);
+          setError('⚠️ 你無權訪問管理後台');
           
           // 登出非管理員帳號
           await supabase.auth.signOut();
@@ -187,8 +187,8 @@ export default function AdminLayout({
             try {
               // 檢查是否為管理員帳號
               if (session?.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-                console.log('非管理員帳號狀態變更事件:', event, session?.user.email);
-                setError('你無權訪問管理後台');
+                console.log('⛔ 非管理員帳號狀態變更事件:', event, session?.user.email);
+                setError('⚠️ 你無權訪問管理後台');
                 
                 // 登出非管理員帳號
                 await supabase.auth.signOut();
@@ -333,4 +333,5 @@ export default function AdminLayout({
       </div>
     </div>
   );
-} 
+}
+ 

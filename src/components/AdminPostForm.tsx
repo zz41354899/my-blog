@@ -10,7 +10,7 @@ import { updatePost, createPost } from '@/lib/api-client';
 import { supabase } from '@/lib/supabaseClient';
 
 interface AdminPostFormProps {
-  // 支持旧的API
+  // 支援舊的API
   post?: {
     id?: string | number;
     title: string;
@@ -41,7 +41,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
     isLoading: externalLoading 
   } = props;
   
-  // 统一post对象，优先使用initialPost，使用useMemo避免每次重新计算
+  // 統一post物件，優先使用initialPost，使用useMemo避免每次重新計算
   const postData = useMemo(() => {
     return initialPost || (post ? {
       id: post.id?.toString(),
@@ -76,7 +76,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
     
-    // 自动生成slug
+    // 自動生成slug
     if (!postData?.slug) {
       setSlug(slugify(newTitle.toLowerCase(), { strict: true }));
     }
@@ -96,7 +96,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
   };
 
   const validateUrl = (url: string): boolean => {
-    if (!url) return true; // 允许空URL
+    if (!url) return true; // 允許空URL
     try {
       new URL(url);
       return true;
@@ -108,24 +108,24 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 基本验证
+    // 基本驗證
     if (!title) {
-      setError('标题不能为空');
+      setError('標題不能為空');
       return;
     }
     
     if (!slug) {
-      setError('Slug不能为空');
+      setError('Slug不能為空');
       return;
     }
     
     if (!content) {
-      setError('内容不能为空');
+      setError('內容不能為空');
       return;
     }
     
     if (coverUrl && !validateUrl(coverUrl)) {
-      setError('封面URL格式无效');
+      setError('封面URL格式無效');
       return;
     }
     
@@ -136,18 +136,18 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
       coverUrl: coverUrl || ''
     };
     
-    // 使用传入的提交函数
+    // 使用傳入的提交函數
     if (onSubmit) {
       try {
         await onSubmit(formData);
       } catch (err) {
-        console.error('保存文章时出错:', err);
-        setError(err instanceof Error ? err.message : '保存文章时出错');
+        console.error('儲存文章時出錯:', err);
+        setError(err instanceof Error ? err.message : '儲存文章時出錯');
       }
       return;
     }
     
-    // 使用内部逻辑
+    // 使用內部邏輯
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -163,26 +163,26 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
       let response;
       
       if (initialPost?.id) {
-        // 更新现有文章
+        // 更新現有文章
         response = await updatePost(initialPost.id, postData);
         setSuccessMessage('文章已成功更新！');
       } else {
-        // 创建新文章
+        // 建立新文章
         response = await createPost(postData);
-        setSuccessMessage('文章已成功创建！');
+        setSuccessMessage('文章已成功建立！');
       }
       
       if (onSuccess && response) {
         onSuccess(response);
       }
       
-      // 如果没有onSuccess回调，则重定向到管理页面
+      // 如果沒有onSuccess回調，則重新導向到管理頁面
       if (!onSuccess) {
         router.push('/admin/posts');
       }
     } catch (err) {
-      console.error('保存文章时出错:', err);
-      setError(err instanceof Error ? err.message : '保存文章时出错');
+      console.error('儲存文章時出錯:', err);
+      setError(err instanceof Error ? err.message : '儲存文章時出錯');
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +197,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
     setError('');
     
     try {
-      // 創建唯一的文件名
+      // 建立唯一的檔案名稱
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -250,7 +250,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
     setCoverUrl('');
   };
 
-  // 确定加载状态，优先使用外部传入的状态
+  // 確定加載狀態，優先使用外部傳入的狀態
   const loading = externalLoading !== undefined ? externalLoading : isLoading;
 
   return (
@@ -269,7 +269,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
       
       <div className="space-y-1">
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-          标题
+          標題
         </label>
         <input
           type="text"
@@ -277,7 +277,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
           value={title}
           onChange={handleTitleChange}
           className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-          placeholder="文章标题"
+          placeholder="文章標題"
         />
       </div>
       
@@ -299,13 +299,13 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
           />
         </div>
         <p className="mt-1 text-sm text-gray-500">
-          URL 名称将用于文章的永久链接，建议使用英文、数字和连字符
+          URL 名稱將用於文章的永久連結，建議使用英文、數字和連字符
         </p>
       </div>
       
       <div className="space-y-2">
         <label htmlFor="coverUrl" className="block text-sm font-medium text-gray-700">
-          封面图片
+          封面圖片
         </label>
         
         <div className="flex items-center space-x-3">
@@ -324,7 +324,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
             className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             {imageUploading ? <LoadingSpinner size="small" className="mr-2" /> : <FiUpload className="mr-2" />}
-            上传图片
+            上傳圖片
           </button>
           <span className="text-sm text-gray-500">或</span>
         </div>
@@ -349,13 +349,13 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
         
         {coverUrl && (
           <div className="mt-3">
-            <p className="text-sm font-medium text-gray-700 mb-1">图片预览</p>
+            <p className="text-sm font-medium text-gray-700 mb-1">圖片預覽</p>
             <div className="relative h-48 w-full overflow-hidden rounded-md border border-gray-200">
               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                 {validateUrl(coverUrl) && (
                   <Image
                     src={coverUrl}
-                    alt="封面预览"
+                    alt="封面預覽"
                     fill
                     style={{ objectFit: 'cover' }}
                     onError={() => setCoverUrl('/placeholder.svg')}
@@ -369,15 +369,15 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
       
       <div className="space-y-1">
         <label htmlFor="content" className="block text-sm font-medium text-gray-700">
-          内容
+          內容
         </label>
         <textarea
           id="content"
           rows={15}
           value={content}
           onChange={handleContentChange}
-          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-          placeholder="使用Markdown格式编写文章内容..."
+          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-3"
+          placeholder="使用 Markdown 格式編寫文章內容…"
         />
       </div>
       
@@ -399,7 +399,7 @@ const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
           ) : (
             <FiCheck className="mr-2" />
           )}
-          {postData?.id ? '更新文章' : '创建文章'}
+          {postData?.id ? '更新文章' : '建立文章'}
         </button>
       </div>
     </form>

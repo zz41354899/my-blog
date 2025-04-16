@@ -20,7 +20,7 @@ async function getPostData(id: string) {
     }
     
     if (!session) {
-      throw new Error('No active session found');
+      throw new Error('找不到有效的登入會話');
     }
     
     const userId = session.user.id;
@@ -74,7 +74,7 @@ export default function EditPostPage() {
   useEffect(() => {
     const loadPost = async () => {
       if (!postId) {
-        setError('Missing post ID');
+        setError('缺少文章 ID');
         setLoading(false);
         return;
       }
@@ -85,12 +85,12 @@ export default function EditPostPage() {
         setPost(post);
         setError(null);
       } catch (err: unknown) {
-        console.error('Failed to load post:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load post';
+        console.error('載入文章失敗:', err);
+        const errorMessage = err instanceof Error ? err.message : '載入文章失敗';
         setError(errorMessage);
         
-        // If unauthorized or no session, redirect to posts list
-        if (errorMessage === '無權編輯他人的文章' || errorMessage === 'No active session found') {
+        // 如果沒有權限或沒有會話，重定向到文章列表
+        if (errorMessage === '無權編輯他人的文章' || errorMessage === '找不到有效的登入會話') {
           router.push('/admin/posts');
         }
       } finally {
@@ -111,7 +111,7 @@ export default function EditPostPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        throw new Error('No active session found');
+        throw new Error('找不到有效的登入會話');
       }
       
       const userId = session.user.id;
@@ -130,7 +130,7 @@ export default function EditPostPage() {
       // 更新成功後導航到文章列表
       router.push('/admin/posts');
     } catch (err) {
-      console.error('Failed to update post:', err);
+      console.error('更新文章失敗:', err);
       setError('更新文章時發生錯誤');
     } finally {
       setIsSubmitting(false);
@@ -150,7 +150,7 @@ export default function EditPostPage() {
       <div className="p-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>錯誤</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       </div>
@@ -162,8 +162,8 @@ export default function EditPostPage() {
       <div className="p-4">
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Not Found</AlertTitle>
-          <AlertDescription>The requested post could not be found.</AlertDescription>
+          <AlertTitle>找不到文章</AlertTitle>
+          <AlertDescription>找不到請求的文章。</AlertDescription>
         </Alert>
       </div>
     );

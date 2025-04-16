@@ -218,7 +218,7 @@ export default function NewPostPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={12}
-            className={`w-full rounded-md border ${errors.content ? 'border-red-500' : 'border-gray-300'} px-4 py-2 focus:border-blue-500 focus:ring-blue-500`}
+            className={`w-full rounded-md border ${errors.content ? 'border-red-500' : 'border-gray-300'} p-3 focus:border-blue-500 focus:ring-blue-500`}
             placeholder="撰寫您的文章內容（支援中文字符）"
           />
           {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}

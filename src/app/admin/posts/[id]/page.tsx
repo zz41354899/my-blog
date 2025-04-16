@@ -251,7 +251,7 @@ export default function EditPostPage() {
             id="content"
             name="content"
             rows={15}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required

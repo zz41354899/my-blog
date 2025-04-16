@@ -257,7 +257,7 @@ export default function EditPostPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={12}
-            className={`w-full rounded-md border ${errors.content ? 'border-red-500' : 'border-gray-300'} px-4 py-2 focus:border-blue-500 focus:ring-blue-500`}
+            className={`w-full rounded-md border ${errors.content ? 'border-red-500' : 'border-gray-300'} p-3 focus:border-blue-500 focus:ring-blue-500`}
             placeholder="撰寫您的文章內容（支援中文字符）"
           />
           {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}
@@ -282,7 +282,7 @@ export default function EditPostPage() {
               disabled={isSubmitting}
               className={`px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isSubmitting ? '保存中...' : '保存變更'}
+              {isSubmitting ? '儲存中...' : '儲存變更'}
             </button>
           </div>
         </div>

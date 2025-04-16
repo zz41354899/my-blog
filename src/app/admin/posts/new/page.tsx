@@ -34,7 +34,7 @@ export default function NewPostPage() {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('會話錯誤:', sessionError);
           setError('無法獲取登入狀態，請重新登入');
           router.push('/login');
           return;
@@ -42,12 +42,12 @@ export default function NewPostPage() {
         
         // 如果沒有會話則重定向到登入頁面
         if (!session) {
-          console.log('New post page: No session found, redirecting to login');
+          console.log('新文章頁面: 找不到會話，正在重定向到登入頁面');
           router.push('/login');
           return;
         }
         
-        console.log('New post page: Session found, user can create posts');
+        console.log('新文章頁面: 已找到會話，用戶可以建立文章');
         setUserId(session.user.id);
       } catch (error) {
         console.error('獲取會話失敗', error);
@@ -86,7 +86,7 @@ export default function NewPostPage() {
     setSuccess(null);
 
     try {
-      console.log('準備創建文章:', { title: data.title, slug: slugify(data.slug), user_id: userId });
+      console.log('準備建立文章:', { title: data.title, slug: slugify(data.slug), user_id: userId });
       
       const postData = {
         title: data.title,
@@ -98,19 +98,19 @@ export default function NewPostPage() {
 
       const result = await createPost(postData);
       
-      console.log('文章創建成功:', result);
+      console.log('文章建立成功:', result);
       setSuccess('文章建立成功！正在跳轉到文章列表...');
       // 延遲重定向以顯示成功消息
       setTimeout(() => {
         router.push('/admin/posts');
       }, 1500);
     } catch (error: unknown) {
-      console.error('創建文章時出錯:', error);
+      console.error('建立文章時出錯:', error);
       
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('創建文章時出現未知錯誤，請重試');
+        setError('建立文章時出現未知錯誤，請重試');
       }
     } finally {
       setIsSubmitting(false);
@@ -131,7 +131,7 @@ export default function NewPostPage() {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="text-center py-8">
-          <p className="text-red-600 mb-4">您需要登入才能創建文章</p>
+          <p className="text-red-600 mb-4">您需要登入才能建立文章</p>
           <Link 
             href="/login" 
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -146,9 +146,9 @@ export default function NewPostPage() {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">創建新文章</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">建立新文章</h1>
         <p className="text-gray-600">
-          填寫下方表單以創建新文章
+          填寫下方表單以建立新文章
         </p>
       </div>
 
