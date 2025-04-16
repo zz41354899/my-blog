@@ -1,0 +1,9 @@
+<svg width="1200" height="675" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#f0f0f0" />
+  <g>
+    <circle cx="600" cy="337.5" r="120" fill="#e0e0e0" />
+    <path d="M600 240 L600 435" stroke="#c0c0c0" stroke-width="30" stroke-linecap="round" />
+    <path d="M500 337.5 L700 337.5" stroke="#c0c0c0" stroke-width="30" stroke-linecap="round" />
+  </g>
+  <text x="600" y="500" font-family="Arial, sans-serif" font-size="36" text-anchor="middle" fill="#808080">文章預設圖片</text>
+</svg> 

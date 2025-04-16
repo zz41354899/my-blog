@@ -1,0 +1,61 @@
+{
+  "name": "pre-dev-check",
+  "trigger": "npm run dev",
+  "description": "在開發環境啟動前自動進行高風險錯誤的預檢與修正",
+  "instructions": [
+    {
+      "if": "Next.js 專案出現 `An unsupported type was passed to use(): [object Object]`",
+      "then": "優先檢查是否直接使用 `params.id` 等 params 物件，應改用 `const params = useParams() as { id: string };` 或 `const { id } = params;`"
+    },
+    {
+      "if": "使用 Supabase Storage 上傳圖片時失敗",
+      "then": "確認 bucket 名稱正確、是否已建立，並確認 RLS 權限是否允許該使用者上傳圖片。"
+    },
+    {
+      "if": "上傳圖片成功但無法預覽",
+      "then": "檢查是否正確取得 publicURL 或 signedURL，並將路徑正確寫入 `cover_url` 欄位。"
+    },
+    {
+      "if": "文章封面圖片沒有顯示",
+      "then": "確認 `cover_url` 有值，且圖片載入錯誤 fallback 為預設圖示。"
+    },
+    {
+      "if": "出現型別錯誤或 any",
+      "then": "自動補上缺漏的型別或標記為 `unknown` 並提醒開發者後續補強。"
+    },
+    {
+      "if": "命名為未使用/拼錯的欄位名稱或變數",
+      "then": "自動檢查資料庫 schema 與 Supabase schema 是否一致，並修正拼錯名稱（如 slug, cover_url 等）"
+    },
+    {
+      "if": "Linter 發出錯誤（如 unused import、no explicit return type）",
+      "then": "自動修復可以修復的 Lint 問題，請立即修正此問題。"
+    }
+  ],
+  "autoFix": {
+    "paramsBug": {
+      "pattern": "const params = use\\(useParams\\(\\)\\);",
+      "replacement": "const params = useParams() as { id: string };"
+    },
+    "coverUrlMismatch": {
+      "pattern": "coverUrl:",
+      "checkIn": ["lib/api.ts", "components/*.tsx"],
+      "replacement": "cover_url:"
+    },
+    "slugSafety": {
+      "pattern": "data\\.slug",
+      "preventPattern": "slugify\\(data\\.slug\\)",
+      "replacement": "slugify(data.slug)"
+    },
+    "undefinedEmptyString": {
+      "pattern": "coverUrl\\s*\\|\\|\\s*undefined",
+      "replacement": "coverUrl || ''"
+    }
+  },
+  "logLevel": "info",
+  "promptMessages": [
+    "🔍 正在檢查專案可能的高風險錯誤...",
+    "⚠️ 發現 params 使用錯誤，修正中...",
+    "✅ 預檢完成：{fixCount} 項已修正"
+  ]
+} 
