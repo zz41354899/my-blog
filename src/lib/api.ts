@@ -130,15 +130,15 @@ export async function createPost(post: Omit<Post, 'id' | 'created_at' | 'updated
     
     console.log('✅ 文章創建成功:', data);
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // 如果是我們已經處理過的錯誤就直接拋出
-    if (error.message) {
+    if (error instanceof Error) {
       throw error;
     }
     
     // 處理其他未預期的錯誤
     console.error('❌ 創建文章時發生未預期錯誤:', error);
-    throw new Error(`創建文章失敗: ${error.message || '未知錯誤'}`);
+    throw new Error(`創建文章失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
   }
 }
 
@@ -185,13 +185,13 @@ export async function updatePost(
     
     console.log(`✅ 文章 ID:${id} 更新成功`);
     return data;
-  } catch (error: any) {
-    if (error.message) {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
       throw error;
     }
     
     console.error(`❌ 更新文章時發生未預期錯誤:`, error);
-    throw new Error(`更新文章失敗: ${error.message || '未知錯誤'}`);
+    throw new Error(`更新文章失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
   }
 }
 

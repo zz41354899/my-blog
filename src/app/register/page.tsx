@@ -95,7 +95,7 @@ export default function RegisterPage() {
     setMessage(null);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -126,7 +126,7 @@ export default function RegisterPage() {
           text: '註冊成功！請查看您的電子郵件以進行驗證'
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
       setMessage({
         type: 'error',

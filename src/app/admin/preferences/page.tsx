@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -95,7 +96,7 @@ export default function PreferencesPage() {
     getUser();
     
     // 監聽認證狀態變化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       console.log('Preferences page: Auth state change:', event);
       
       if (event === 'SIGNED_IN') {
@@ -110,7 +111,7 @@ export default function PreferencesPage() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, router]);
+  }, [router]); // 移除 supabase 依賴
 
   // 表單提交處理
   const handleSubmit = async (e: React.FormEvent) => {
@@ -231,14 +232,17 @@ export default function PreferencesPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-gray-50 rounded-lg">
           <div className="flex-shrink-0">
             {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt="頭像預覽"
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=頭像';
-                }}
-              />
+              <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+                <Image
+                  src={profile.avatar_url}
+                  alt="頭像預覽"
+                  fill
+                  className="object-cover"
+                  onError={() => {
+                    setProfile({...profile, avatar_url: 'https://via.placeholder.com/150?text=頭像'});
+                  }}
+                />
+              </div>
             ) : (
               <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center border-4 border-white shadow-md">
                 <span className="text-blue-600 font-semibold text-2xl">

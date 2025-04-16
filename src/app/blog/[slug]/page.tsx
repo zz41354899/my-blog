@@ -1,11 +1,9 @@
 'use client';
 
-import { notFound } from 'next/navigation';
 import { getPostBySlug } from '@/lib/api';
 import Link from 'next/link';
 import { Post } from '@/types/index';
 import { useParams } from 'next/navigation';
-import { use } from 'react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -94,10 +92,13 @@ export default function BlogPostPage() {
         {/* 顯示封面圖片，無論是否存在都顯示（使用預設圖片作為後備） */}
         <div className="mb-8 -mx-8 -mt-8 relative" style={{ height: '400px' }}>
           {imageError ? (
-            <img
+            <Image
               src="/placeholder.svg"
               alt={`${post.title} 的封面圖片`}
-              className="w-full h-full object-cover rounded-t-2xl"
+              fill={true}
+              className="object-cover rounded-t-2xl"
+              priority
+              sizes="(max-width: 1200px) 100vw, 1200px"
             />
           ) : (
             <Image

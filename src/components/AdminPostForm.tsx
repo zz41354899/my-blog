@@ -1,62 +1,190 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Post } from '@/types/index';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { FiCheck, FiUpload } from 'react-icons/fi';
+import Image from 'next/image';
+import slugify from 'slugify';
+import LoadingSpinner from './LoadingSpinner';
+import { updatePost, createPost } from '@/lib/api-client';
 import { supabase } from '@/lib/supabaseClient';
 
 interface AdminPostFormProps {
-  post?: Post;
-  onSubmit: (data: { title: string; slug: string; content: string; coverUrl?: string }) => Promise<void>;
-  isLoading: boolean;
+  // 支持旧的API
+  post?: {
+    id?: string | number;
+    title: string;
+    slug: string;
+    content: string;
+    cover_url?: string;
+  };
+  onSubmit?: (data: { title: string; slug: string; content: string; coverUrl?: string }) => Promise<void>;
+  isLoading?: boolean;
+  
+  // 新API
+  initialPost?: {
+    id?: string;
+    title: string;
+    slug: string;
+    content: string;
+    coverUrl?: string;
+  };
+  onSuccess?: (post: Record<string, unknown>) => void;
 }
 
-export default function AdminPostForm({ post, onSubmit, isLoading }: AdminPostFormProps) {
+const AdminPostForm: React.FC<AdminPostFormProps> = (props) => {
+  const { 
+    post, 
+    initialPost, 
+    onSubmit, 
+    onSuccess, 
+    isLoading: externalLoading 
+  } = props;
+  
+  // 统一post对象，优先使用initialPost，使用useMemo避免每次重新计算
+  const postData = useMemo(() => {
+    return initialPost || (post ? {
+      id: post.id?.toString(),
+      title: post.title,
+      slug: post.slug,
+      content: post.content,
+      coverUrl: post.cover_url
+    } : undefined);
+  }, [initialPost, post]);
+
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
-  const [formError, setFormError] = useState('');
-  const [isTouched, setIsTouched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
 
   // 當組件加載時，如果有現有的 post，則填充表單
   useEffect(() => {
-    if (post) {
-      setTitle(post.title);
-      setSlug(post.slug);
-      setContent(post.content);
-      setCoverUrl(post.cover_url || '');
+    if (postData) {
+      setTitle(postData.title);
+      setSlug(postData.slug);
+      setContent(postData.content);
+      setCoverUrl(postData.coverUrl || '');
     }
-  }, [post]);
+  }, [postData]);
 
-  // 將標題轉換為 slug 的函數
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // 移除非字母數字字符
-      .replace(/\s+/g, '-') // 將空格替換為連字符
-      .replace(/-+/g, '-'); // 移除連續連字符
-  };
-
-  // 重新生成 slug 的按鈕處理函數
-  const regenerateSlug = () => {
-    if (title) {
-      const newSlug = generateSlug(title);
-      setSlug(newSlug);
-    }
-  };
-
-  // 處理標題更改並自動更新 slug（僅當 slug 尚未手動修改時）
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    setIsTouched(true);
+    
+    // 自动生成slug
+    if (!postData?.slug) {
+      setSlug(slugify(newTitle.toLowerCase(), { strict: true }));
+    }
+  };
 
-    // 如果 slug 尚未被手動修改或為空，則自動更新
-    if (!slug || slug === generateSlug(title)) {
-      const newSlug = generateSlug(newTitle);
-      setSlug(newSlug);
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSlug = e.target.value;
+    setSlug(slugify(newSlug.toLowerCase(), { strict: true }));
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+  };
+
+  const handleCoverUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCoverUrl(e.target.value);
+  };
+
+  const validateUrl = (url: string): boolean => {
+    if (!url) return true; // 允许空URL
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 基本验证
+    if (!title) {
+      setError('标题不能为空');
+      return;
+    }
+    
+    if (!slug) {
+      setError('Slug不能为空');
+      return;
+    }
+    
+    if (!content) {
+      setError('内容不能为空');
+      return;
+    }
+    
+    if (coverUrl && !validateUrl(coverUrl)) {
+      setError('封面URL格式无效');
+      return;
+    }
+    
+    const formData = {
+      title,
+      slug,
+      content,
+      coverUrl: coverUrl || ''
+    };
+    
+    // 使用传入的提交函数
+    if (onSubmit) {
+      try {
+        await onSubmit(formData);
+      } catch (err) {
+        console.error('保存文章时出错:', err);
+        setError(err instanceof Error ? err.message : '保存文章时出错');
+      }
+      return;
+    }
+    
+    // 使用内部逻辑
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      const postData = {
+        title,
+        slug,
+        content,
+        coverUrl: coverUrl || null
+      };
+      
+      let response;
+      
+      if (initialPost?.id) {
+        // 更新现有文章
+        response = await updatePost(initialPost.id, postData);
+        setSuccessMessage('文章已成功更新！');
+      } else {
+        // 创建新文章
+        response = await createPost(postData);
+        setSuccessMessage('文章已成功创建！');
+      }
+      
+      if (onSuccess && response) {
+        onSuccess(response);
+      }
+      
+      // 如果没有onSuccess回调，则重定向到管理页面
+      if (!onSuccess) {
+        router.push('/admin/posts');
+      }
+    } catch (err) {
+      console.error('保存文章时出错:', err);
+      setError(err instanceof Error ? err.message : '保存文章时出错');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -66,7 +194,7 @@ export default function AdminPostForm({ post, onSubmit, isLoading }: AdminPostFo
     if (!file) return;
     
     setImageUploading(true);
-    setFormError('');
+    setError('');
     
     try {
       // 創建唯一的文件名
@@ -108,9 +236,10 @@ export default function AdminPostForm({ post, onSubmit, isLoading }: AdminPostFo
       } else {
         throw new Error('無法獲取有效的檔案 URL');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('上傳圖片時出錯:', error);
-      setFormError(`上傳圖片失敗: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      setError(`上傳圖片失敗: ${errorMessage}`);
     } finally {
       setImageUploading(false);
     }
@@ -121,84 +250,42 @@ export default function AdminPostForm({ post, onSubmit, isLoading }: AdminPostFo
     setCoverUrl('');
   };
 
-  // 處理表單提交
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError('');
-
-    // 基本驗證
-    if (!title.trim()) {
-      setFormError('請輸入標題');
-      return;
-    }
-
-    if (!slug.trim()) {
-      setFormError('請輸入 URL 名稱');
-      return;
-    }
-
-    if (!content.trim()) {
-      setFormError('請輸入內容');
-      return;
-    }
-
-    // 驗證 URL 格式（如果提供）
-    if (coverUrl && !isValidUrl(coverUrl)) {
-      setFormError('請輸入有效的圖片 URL');
-      return;
-    }
-
-    try {
-      await onSubmit({
-        title,
-        slug,
-        content,
-        coverUrl: coverUrl || '' // 使用空字串而非 undefined
-      });
-    } catch (error) {
-      console.error('提交表單時出錯:', error);
-      setFormError('提交表單時發生錯誤');
-    }
-  };
-
-  // 驗證 URL 格式
-  const isValidUrl = (string: string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
+  // 确定加载状态，优先使用外部传入的状态
+  const loading = externalLoading !== undefined ? externalLoading : isLoading;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {formError && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-          {formError}
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{error}</span>
         </div>
       )}
-
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-          標題
+      
+      {successMessage && (
+        <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{successMessage}</span>
+        </div>
+      )}
+      
+      <div className="space-y-1">
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+          标题
         </label>
         <input
           type="text"
           id="title"
           value={title}
           onChange={handleTitleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="輸入文章標題"
-          required
+          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+          placeholder="文章标题"
         />
       </div>
-
-      <div>
-        <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
-          URL 名稱
+      
+      <div className="space-y-1">
+        <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
+          Slug
         </label>
-        <div className="flex">
+        <div className="flex rounded-md shadow-sm">
           <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
             /blog/
           </span>
@@ -206,114 +293,117 @@ export default function AdminPostForm({ post, onSubmit, isLoading }: AdminPostFo
             type="text"
             id="slug"
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            className="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-none focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="url-friendly-name"
-            required
+            onChange={handleSlugChange}
+            className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300"
+            placeholder="url-friendly-slug"
+          />
+        </div>
+        <p className="mt-1 text-sm text-gray-500">
+          URL 名称将用于文章的永久链接，建议使用英文、数字和连字符
+        </p>
+      </div>
+      
+      <div className="space-y-2">
+        <label htmlFor="coverUrl" className="block text-sm font-medium text-gray-700">
+          封面图片
+        </label>
+        
+        <div className="flex items-center space-x-3">
+          <input
+            type="file"
+            id="imageUpload"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+            disabled={imageUploading}
           />
           <button
             type="button"
-            onClick={regenerateSlug}
-            className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-700 text-sm hover:bg-gray-100"
+            onClick={() => document.getElementById('imageUpload')?.click()}
+            disabled={imageUploading}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            重新產生
+            {imageUploading ? <LoadingSpinner size="small" className="mr-2" /> : <FiUpload className="mr-2" />}
+            上传图片
+          </button>
+          <span className="text-sm text-gray-500">或</span>
+        </div>
+        
+        <div className="mt-1 flex rounded-md shadow-sm">
+          <input
+            type="text"
+            id="coverUrl"
+            value={coverUrl}
+            onChange={handleCoverUrlChange}
+            className="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="https://example.com/image.jpg"
+          />
+          <button
+            type="button"
+            onClick={handleClearImage}
+            className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-700 hover:bg-gray-100"
+          >
+            清除
           </button>
         </div>
-        <p className="mt-1 text-xs text-gray-500">
-          此為文章的網址，建議使用英文、數字和連字符（-）
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          封面圖片
-        </label>
         
-        {/* 圖片預覽區域 */}
         {coverUrl && (
-          <div className="mb-4 relative">
-            <img 
-              src={coverUrl} 
-              alt="封面圖片預覽" 
-              className="w-full max-h-64 object-cover rounded-md"
-              onError={(e) => e.currentTarget.src = '/placeholder.svg'}
-            />
-            <button
-              type="button"
-              onClick={handleClearImage}
-              className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 transition-colors"
-              title="刪除圖片"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
+          <div className="mt-3">
+            <p className="text-sm font-medium text-gray-700 mb-1">图片预览</p>
+            <div className="relative h-48 w-full overflow-hidden rounded-md border border-gray-200">
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                {validateUrl(coverUrl) && (
+                  <Image
+                    src={coverUrl}
+                    alt="封面预览"
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    onError={() => setCoverUrl('/placeholder.svg')}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         )}
-        
-        {/* 圖片上傳區域 */}
-        <div className="mt-2">
-          <div className="flex items-center space-x-2">
-            <label className="flex flex-col items-center px-4 py-2 bg-white text-blue-600 rounded-md border border-blue-600 cursor-pointer hover:bg-blue-50 transition-colors">
-              <span className="text-sm font-medium">
-                {imageUploading ? '上傳中...' : '選擇圖片'}
-              </span>
-              <input 
-                type="file" 
-                onChange={handleImageUpload} 
-                className="hidden" 
-                accept="image/*"
-                disabled={imageUploading}
-              />
-            </label>
-            <span className="text-xs text-gray-500">或</span>
-            <input
-              type="text"
-              id="coverUrl"
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="輸入圖片 URL"
-              disabled={imageUploading}
-            />
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            建議使用 16:9 比例的圖片，最大 10MB。支援 JPG、PNG、WebP 格式。
-          </p>
-        </div>
       </div>
-
-      <div>
-        <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-          內容
+      
+      <div className="space-y-1">
+        <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+          内容
         </label>
         <textarea
           id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
           rows={15}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="輸入文章內容..."
-          required
+          value={content}
+          onChange={handleContentChange}
+          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+          placeholder="使用Markdown格式编写文章内容..."
         />
       </div>
-
-      <div>
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="mr-3 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          取消
+        </button>
         <button
           type="submit"
-          disabled={isLoading || imageUploading}
-          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-            (isLoading || imageUploading) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
-          }`}
+          disabled={loading}
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          {isLoading ? (
-            <div className="flex items-center">
-              <LoadingSpinner size="small" />
-              <span className="ml-2">處理中...</span>
-            </div>
-          ) : post ? '更新文章' : '發佈文章'}
+          {loading ? (
+            <LoadingSpinner size="small" className="mr-2" />
+          ) : (
+            <FiCheck className="mr-2" />
+          )}
+          {postData?.id ? '更新文章' : '创建文章'}
         </button>
       </div>
     </form>
   );
-} 
+};
+
+export default AdminPostForm; 

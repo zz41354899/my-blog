@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { getPostBySlug, updatePost } from "@/lib/api";
-import { Post } from "@/types/index";
-import PostImage from "@/components/ui/PostImage";
+import { updatePost } from "@/lib/api";
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -20,7 +18,6 @@ export default function EditPostPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [post, setPost] = useState<Post | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -69,7 +66,6 @@ export default function EditPostPage() {
             return;
           }
           
-          setPost(data);
           setTitle(data.title);
           setSlug(data.slug);
           setContent(data.content);
@@ -229,7 +225,7 @@ export default function EditPostPage() {
             />
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            僅允許小寫字母、數字和連字符，例如: "my-post-title"
+            僅允許小寫字母、數字和連字符，例如: &quot;my-post-title&quot;
           </p>
         </div>
         
@@ -254,34 +250,30 @@ export default function EditPostPage() {
           <textarea
             id="content"
             name="content"
-            rows={12}
+            rows={15}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required
-          />
+          ></textarea>
         </div>
         
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            {isSubmitting ? (
-              <>
-                <LoadingSpinner size="small" />
-                處理中...
-              </>
-            ) : '更新文章'}
-          </button>
-          
+        <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => router.push('/admin/posts')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="bg-gray-200 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-300 focus:outline-none"
           >
             取消
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none ${
+              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {isSubmitting ? '儲存中...' : '儲存更改'}
           </button>
         </div>
       </form>

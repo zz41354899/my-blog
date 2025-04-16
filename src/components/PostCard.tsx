@@ -36,10 +36,12 @@ export default function PostCard({ post }: PostCardProps) {
       {/* 文章封面圖 */}
       <div className="h-40 relative">
         {imageError ? (
-          <img
+          <Image
             src="/placeholder.svg"
             alt={`${post.title} 的封面圖片`}
             className="object-cover w-full h-full"
+            width={400}
+            height={160}
           />
         ) : (
           <Image

@@ -3,11 +3,13 @@ import React from 'react';
 interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
   color?: string;
+  className?: string;
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'medium',
-  color = 'currentColor' 
+  color = 'currentColor',
+  className = ''
 }) => {
   const sizeMap = {
     small: 'w-4 h-4',
@@ -18,7 +20,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const dimensions = sizeMap[size] || sizeMap.medium;
 
   return (
-    <div className="flex items-center justify-center">
+    <div className={`flex items-center justify-center ${className}`}>
       <svg 
         className={`animate-spin ${dimensions}`} 
         xmlns="http://www.w3.org/2000/svg" 

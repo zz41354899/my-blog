@@ -33,7 +33,6 @@ export default function OptimizedImage({
   const [imgSrc, setImgSrc] = useState(src);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [blurHash, setBlurHash] = useState('');
   
   useEffect(() => {
     // 如果URL變更，重置狀態

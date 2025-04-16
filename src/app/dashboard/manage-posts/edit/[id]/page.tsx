@@ -114,7 +114,7 @@ export default function EditPostPage() {
     try {
       new URL(url)
       return true
-    } catch (e) {
+    } catch {
       return false
     }
   }
@@ -131,7 +131,7 @@ export default function EditPostPage() {
     
     try {
       // 更新文章
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('posts')
         .update({
           title,
@@ -150,16 +150,17 @@ export default function EditPostPage() {
       // 重定向到文章管理頁面
       router.push('/admin/posts')
       router.refresh()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('更新文章時出錯:', error)
       
       // 處理唯一性約束錯誤
-      if (error.code === '23505') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
         setErrors({
           slug: '此Slug已被使用，請嘗試其他值'
         })
       } else {
-        alert(`更新文章時出錯: ${error.message || '未知錯誤'}`)
+        const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+        alert(`更新文章時出錯: ${errorMessage}`)
       }
     } finally {
       setIsSubmitting(false)

@@ -95,125 +95,72 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profileName, setProfileName] = useState('用戶');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [profileName, setProfileName] = useState<string>("用戶");
-  const [loadingStartTime, setLoadingStartTime] = useState<number>(Date.now());
-  const [loadingMessage, setLoadingMessage] = useState<string>("正在載入...");
   const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('載入中...');
+  const loadingStartTime = Date.now();
   const router = useRouter();
-  
-  /**
-   * 獲取用戶數據的主要函數
-   */
-  async function getUser() {
-    // 如果已經有使用者，直接返回
-    if (user) return user;
-    
-    // 設定載入開始時間和訊息
-    setLoadingStartTime(Date.now());
-    setLoadingMessage('正在檢查登入狀態...');
-    
-    try {
-      // 獲取當前會話
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session check error:', sessionError);
-        setError(sessionError.message);
-        setIsLoading(false);
-        router.push('/login');
-        return null;
-      }
-      
-      // 如果沒有會話，表示用戶未登入
-      if (!session) {
-        console.log('No session found, redirecting to login');
-        setIsLoading(false);
-        router.push('/login');
-        return null;
-      }
-      
-      console.log('Session found:', session.user.id);
-      
-      // 檢查是否為管理員帳號
-      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-        console.log('⛔ 非管理員帳號嘗試訪問 /admin:', session.user.email);
-        setError('⚠️ 你無權訪問管理後台');
-        setLoadingMessage('尚未登入或無權限');
-        
-        // 登出非管理員帳號
-        await supabase.auth.signOut();
-        setIsLoading(false);
-        
-        // 延遲跳轉至登入頁面
-        setTimeout(() => {
-          router.push('/login');
-        }, 2000);
-        
-        return null;
-      }
-      
-      // 獲取用戶資料
-      setLoadingMessage('正在獲取用戶資料...');
-      
-      // 確保至少顯示載入動畫一段時間，避免閃爍
-      const startTime = Date.now();
-      
-      try {
-        // 獲取用戶檔案
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Profile fetch error:', profileError);
-          // 即使個人檔案獲取失敗，我們仍然會保留會話
-        }
-        
-        // 合併用戶數據
-        const userData: User = {
-          ...session.user,
-          profile: profile || { 
-            name: session.user.email?.split('@')[0] || '用戶',
-            avatar_url: null 
-          }
-        };
-        
-        // 更新顯示名稱
-        setProfileName(userData.profile?.name || userData.email?.split('@')[0] || '用戶');
-        
-        // 確保載入至少顯示500毫秒以避免閃爍
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime < 500) {
-          await new Promise(resolve => setTimeout(resolve, 500 - elapsedTime));
-        }
-        
-        console.log('User data loaded successfully:', userData.id);
-        setUser(userData);
-        setIsLoading(false);
-        return userData;
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-        setError('無法獲取用戶資料，請重新登入');
-        setIsLoading(false);
-        setTimeout(() => router.push('/login'), 2000);
-        return null;
-      }
-    } catch (err) {
-      console.error('Error in getUser:', err);
-      setError('發生錯誤，請重新整理頁面');
-      setIsLoading(false);
-      setTimeout(() => router.push('/login'), 2000);
-      return null;
-    }
-  }
   
   // 監聽身份驗證狀態變化
   useEffect(() => {
     let isMounted = true;
+    
+    // User data fetching function
+    async function getUser() {
+      try {
+        // 從會話中獲取用戶信息
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // 檢查是否為管理員帳號
+        if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+          console.log('⛔ 非管理員帳號', session.user.email);
+          setError('⚠️ 你無權訪問管理後台');
+          
+          // 登出非管理員帳號
+          await supabase.auth.signOut();
+          
+          // 延遲跳轉至登入頁面
+          setTimeout(() => {
+            router.push('/login');
+          }, 1000);
+          
+          setIsLoading(false);
+          return;
+        }
+        
+        // 獲取用戶個人資料
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name, avatar_url')
+          .eq('id', session.user.id)
+          .single();
+          
+        // 設置用戶信息
+        setUser({
+          ...session.user,
+          profile: profile || undefined
+        });
+        
+        // 從個人資料或Email中設置顯示名稱
+        setProfileName(
+          profile?.name || session.user.email?.split('@')[0] || '用戶'
+        );
+        
+        // 已加載完成
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setError('獲取用戶資料時出錯');
+        setIsLoading(false);
+      }
+    }
     
     // 初始檢查用戶會話
     async function initializeSession() {
@@ -267,7 +214,7 @@ export default function AdminLayout({
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
   
   // 登出處理函數
   const handleLogout = async () => {

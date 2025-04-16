@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface PostImageProps {
   src: string;
@@ -8,6 +9,8 @@ interface PostImageProps {
   fallbackSrc?: string;
   className?: string;
   style?: React.CSSProperties;
+  width?: number;
+  height?: number;
 }
 
 export default function PostImage({
@@ -15,7 +18,9 @@ export default function PostImage({
   alt,
   fallbackSrc = '/placeholder.svg',
   className = '',
-  style = {}
+  style = {},
+  width = 800,
+  height = 450
 }: PostImageProps) {
   const [imgSrc, setImgSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
@@ -28,12 +33,14 @@ export default function PostImage({
   };
 
   return (
-    <img
+    <Image
       src={imgSrc}
       alt={alt}
       className={className}
       style={style}
       onError={handleError}
+      width={width}
+      height={height}
     />
   );
 } 

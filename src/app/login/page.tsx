@@ -50,19 +50,6 @@ export default function AuthPage() {
     }, 5000);
   }, [router, searchParams]);
 
-  // 暴力跳轉函數
-  const forceNavigate = useCallback(() => {
-    const redirectParam = searchParams.get('redirect');
-    const finalRedirectPath = redirectParam || '/admin';
-    
-    console.log(`🔥 執行暴力跳轉到 ${finalRedirectPath}`);
-    try {
-      window.location.href = finalRedirectPath;
-    } catch (err) {
-      console.error(`⚠️ 暴力跳轉失敗:`, err);
-    }
-  }, [searchParams]);
-
   // 調試函數：打印 localStorage 中的 Supabase 相關項目
   const debugLocalStorage = useCallback(() => {
     console.log('--- localStorage 調試信息 ---');
@@ -122,8 +109,10 @@ export default function AuthPage() {
           console.log('⏳ 尚未登入或 session 尚未就緒');
           return false;
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('🔴 檢查 session 時出錯:', err);
+        setError('檢查登入狀態時發生錯誤，請重新載入頁面');
+        setCheckingSession(false);
         return false;
       }
     };
@@ -212,7 +201,7 @@ export default function AuthPage() {
                 } else {
                   console.log('找到用戶 profile:', profile);
                 }
-              } catch (profileErr) {
+              } catch (profileErr: unknown) {
                 console.warn('檢查 profile 時出錯，但不影響登入流程:', profileErr);
               }
               
@@ -238,7 +227,7 @@ export default function AuthPage() {
               setCheckingSession(false);
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Session 檢查錯誤:', error);
           setError('檢查登入狀態時發生未知錯誤');
           setCheckingSession(false);
@@ -265,7 +254,7 @@ export default function AuthPage() {
         clearTimeout(forceRedirectRef.current);
       }
     };
-  }, [router, navigateToRedirect, debugLocalStorage]);
+  }, [router, navigateToRedirect, debugLocalStorage, checkingSession, searchParams]);
 
   // 冷卻時間計時器
   useEffect(() => {
@@ -382,7 +371,7 @@ export default function AuthPage() {
       }, 1000);
       
       return null;
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('登入時發生未預期錯誤:', e);
       return '登入時發生未預期錯誤，請稍後再試';
     } finally {
@@ -417,7 +406,7 @@ export default function AuthPage() {
       if (errorMessage) {
         setError(errorMessage);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('表單提交錯誤:', error);
       setError('處理您的請求時發生錯誤');
     } finally {

@@ -3,202 +3,136 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { Post } from '@/types/index';
-import { getCurrentUserPosts, deletePost } from '@/lib/api';
+import Image from 'next/image';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { deletePost } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-// Common icon components to avoid duplication
+type Post = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  cover_url: string;
+  created_at: string;
+  author_id: string;
+};
+
+// Icons
 const AddIcon = () => (
-  <svg
-    className="w-5 h-5 mr-1.5"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-    />
+  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
   </svg>
 );
 
 const SearchIcon = () => (
-  <svg
-    className="w-5 h-5 text-gray-400"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-    />
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
   </svg>
 );
 
 const ViewIcon = () => (
   <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
   </svg>
 );
 
 const EditIcon = () => (
   <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
   </svg>
 );
 
 const DeleteIcon = () => (
   <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
   </svg>
 );
 
 const LockIcon = () => (
-  <svg
-    className="w-12 h-12 text-gray-300"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-    />
+  <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
   </svg>
 );
 
 const EmptyIcon = () => (
-  <svg
-    className="w-12 h-12 text-gray-300"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={1.5}
-      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-    />
+  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
   </svg>
 );
 
-// Button component to reduce duplicate code
-interface ActionButtonProps {
-  onClick: () => void;
-  disabled?: boolean;
-  className: string;
-  children: React.ReactNode;
-}
-
-const ActionButton = ({ onClick, disabled, className, children }: ActionButtonProps) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`inline-flex items-center px-2.5 py-1.5 rounded text-xs transition-colors ${className} ${
-      disabled ? 'opacity-50 cursor-not-allowed' : ''
-    }`}
-  >
-    {children}
-  </button>
-);
-
+// Main Page Component
 export default function PostsManagementPage() {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+  
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-  // 獲取用戶ID和文章
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        setHasError(false);
-        setErrorMessage('');
         
-        // 獲取當前登入用戶
-        const { data: { session } } = await supabase.auth.getSession();
+        // 獲取當前用戶
+        const { data: { user } } = await supabase.auth.getUser();
         
-        // 如果沒有會話則重定向到登入頁面
-        if (!session) {
-          console.log('Posts page: No session found, redirecting to login');
-          router.push('/login');
+        if (!user) {
           return;
         }
-
-        console.log('Posts page: Session found, user ID:', session.user.id);
-        setUserId(session.user.id);
         
-        // 獲取文章
-        if (session.user.id) {
-          try {
-            const postsData = await getCurrentUserPosts(session.user.id);
-            setPosts(postsData);
-          } catch (postsError) {
-            console.error('Posts page: Error fetching posts:', postsError);
-            setHasError(true);
-            setErrorMessage('無法獲取文章資料。可能是數據庫連接問題或表不存在。');
-            setPosts([]);
-          }
-        } else {
-          setHasError(true);
-          setErrorMessage('無法確定用戶身份，請重新登入');
+        setUserId(user.id);
+        
+        // 獲取用戶的文章
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('author_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
         }
+        
+        setPosts(data || []);
       } catch (error) {
-        console.error('載入文章時出錯:', error);
+        console.error('獲取文章時出錯:', error);
         setHasError(true);
-        setErrorMessage('載入頁面時發生錯誤，請稍後再試');
-        setPosts([]);
+        setErrorMessage(error instanceof Error ? error.message : '未知錯誤');
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     fetchData();
     
-    // 監聽認證狀態變化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setUserId(session.user.id);
-        fetchData();
-      } else if (event === 'SIGNED_OUT') {
-        router.push('/login');
-      }
+    // 訂閱身份驗證狀態更改
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      // 身份驗證狀態改變時重新獲取數據
+      fetchData();
     });
-
+    
     return () => {
       subscription.unsubscribe();
     };
-  }, [router]);
-
-  // 刪除文章
-  const handleDeletePost = async (id: number) => {
-    if (!userId || !confirm('確定要刪除這篇文章嗎？此操作不可恢復。')) {
+  }, [supabase, router]);
+  
+  // 處理刪除文章
+  const handleDeletePost = async (id: string) => {
+    if (!userId || !confirm('確定要刪除這篇文章嗎？此操作無法恢復。')) {
       return;
     }
     
     setDeleteLoading(id);
     
     try {
-      const success = await deletePost(id, userId);
+      const success = await deletePost(Number(id), userId);
       
       if (success) {
         setPosts(posts.filter(post => post.id !== id));
@@ -380,12 +314,16 @@ export default function PostsManagementPage() {
                     <div className="flex items-center">
                       {post.cover_url && (
                         <div className="flex-shrink-0 mr-3">
-                          <img
+                          <Image
                             src={post.cover_url}
                             alt=""
+                            width={40}
+                            height={40}
                             className="h-10 w-10 rounded object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=圖片';
+                              // Type assertion needed for TypeScript
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'https://via.placeholder.com/150?text=圖片';
                             }}
                           />
                         </div>

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { Post } from '@/types/index';
 import AdminPostForm from '@/components/AdminPostForm';
 import { updatePost } from '@/lib/api';
@@ -44,7 +43,7 @@ async function getPostData(id: string) {
     }
     
     return { post };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in getPostData:', error);
     throw error;
   }
@@ -85,12 +84,13 @@ export default function EditPostPage() {
         const { post } = await getPostData(postId);
         setPost(post);
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to load post:', err);
-        setError(err.message || 'Failed to load post');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load post';
+        setError(errorMessage);
         
         // If unauthorized or no session, redirect to posts list
-        if (err.message === '無權編輯他人的文章' || err.message === 'No active session found') {
+        if (errorMessage === '無權編輯他人的文章' || errorMessage === 'No active session found') {
           router.push('/admin/posts');
         }
       } finally {

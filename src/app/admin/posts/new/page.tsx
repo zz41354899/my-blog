@@ -8,19 +8,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import AdminPostForm from '@/components/AdminPostForm';
 import Link from 'next/link';
 
-// 定義 Post 類型
-interface Post {
-  id: number;
-  title: string;
-  slug: string;
-  content: string;
-  cover_url?: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-
 // Slug 清洗函數，確保 URL 安全
 function slugify(text: string): string {
   return text
@@ -74,11 +61,8 @@ export default function NewPostPage() {
     checkUser();
     
     // 監聽認證狀態變化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('New post page: Auth state change:', event);
-      
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        // 用戶登出，重定向到登入頁面
         router.push('/login');
       }
     });
@@ -120,10 +104,10 @@ export default function NewPostPage() {
       setTimeout(() => {
         router.push('/admin/posts');
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('創建文章時出錯:', error);
       
-      if (error.message) {
+      if (error instanceof Error) {
         setError(error.message);
       } else {
         setError('創建文章時出現未知錯誤，請重試');
